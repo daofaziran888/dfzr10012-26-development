@@ -8,6 +8,26 @@ from typing import Any
 
 from app.seed import SEED_ROWS
 
+MODULE_LABELS = {
+    "streamin": "流数据源接入",
+    "operator": "流处理算子",
+    "window": "窗口计算配置",
+    "state": "状态后端管理",
+    "checkpoint": "检查点恢复",
+    "backpress": "反压监控面板",
+    "latency": "延迟追踪管理",
+    "jobops": "流作业运维",
+    "sink": "流数据输出端",
+    "schema": "流数据格式定义",
+    "watermark": "水位线管理",
+    "parallel": "并行度调优",
+    "parallel_suggest": "并行度建议与资源审批",
+    "metric": "流作业指标采集",
+    "alarm": "流告警规则",
+    "udf": "自定义函数库",
+    "log": "流处理日志中心",
+}
+
 
 class Store:
     def __init__(self) -> None:
@@ -33,6 +53,7 @@ class Store:
             rows = self.rows(name)
             modules.append({
                 "name": name,
+                "label": MODULE_LABELS.get(name, name),
                 "created": len(rows),
                 "pending": sum(1 for row in rows if row.get("pending")),
                 "abnormal": sum(1 for row in rows if row.get("abnormal")),

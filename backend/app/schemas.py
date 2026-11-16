@@ -173,6 +173,18 @@ class ParallelEntry(BaseModel):
     field_6: str | None = None  # 调优时间
     field_7: str | None = None  # 记录状态
 
+class ParallelSuggestEntry(BaseModel):
+    """并行度建议数据记录明细结构。"""
+
+    field_0: str | None = None  # 建议编号
+    field_1: str | None = None  # 流算子名
+    field_2: str | None = None  # 阻塞算子
+    field_3: str | None = None  # 当前并行度
+    field_4: str | None = None  # 建议值
+    field_5: str | None = None  # 吞吐收益
+    field_6: str | None = None  # 资源成本
+    field_7: str | None = None  # 审批状态
+
 class MetricEntry(BaseModel):
     """指标采集器明细结构。"""
 

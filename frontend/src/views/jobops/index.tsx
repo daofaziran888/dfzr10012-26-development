@@ -11,7 +11,11 @@ const columns = [
   "运行时长",
   "异常次数",
   "重启次数",
-  "实例状态"
+  "实例状态",
+  "并行度容量",
+  "节点容量",
+  "并行度建议编号",
+  "建议数据版本"
 ]
 const actions = [
   "启动作业",
@@ -34,7 +38,7 @@ const stats = [
     "value": 0
   },
   {
-    "label": "已暂停作业",
+    "label": "未绑定建议记录",
     "value": 0
   }
 ]
@@ -46,13 +50,20 @@ export default function JobopsView() {
   const [total, setTotal] = useState(0)
   const [errorMessage, setErrorMessage] = useState('')
   const [filters, setFilters] = useState<Record<string, string>>({})
-  const filterFields = useMemo(() => columns.slice(0, 3), [])
+
+  const counters = useMemo(() => {
+    const running = rows.filter((row) => row["实例状态"] === "运行中").length
+    const waiting = rows.filter((row) => !row["并行度建议编号"]).length
+    return [rows.length, running, waiting]
+  }, [rows])
 
   const reload = useCallback(async () => {
     setErrorMessage('')
-    const query = new URLSearchParams(filters).toString()
+    const query = new URLSearchParams()
+    if (filters["实例编号"]) query.set('keyword', filters["实例编号"])
+    if (filters["实例状态"]) query.set('status', filters["实例状态"])
     try {
-      const response = await request(`${ENDPOINT}?${query}`)
+      const response = await request(`${ENDPOINT}?${query.toString()}`)
       if (!response.ok) {
         throw new Error('作业实例列表读取失败')
       }
@@ -95,6 +106,9 @@ export default function JobopsView() {
           <button className="btn primary" type="button" onClick={() => setErrorMessage('作业实例登记入口尚未接入审批流')}>
             登记作业实例
           </button>
+          <button className="btn" type="button" onClick={() => window.open('/parallel-suggest', '_blank')}>
+            查看并行度建议
+          </button>
           <button className="btn" type="button" onClick={() => window.open(`${ENDPOINT}/export`, '_blank')}>
             导出流作业运维清单
           </button>
@@ -102,25 +116,33 @@ export default function JobopsView() {
       </header>
 
       <div className="stat-row">
-        {stats.map((item) => (
+        {stats.map((item, index) => (
           <article key={item.label} className="stat-card">
             <span className="stat-label">{item.label}</span>
-            <strong className="stat-value">{item.value}</strong>
+            <strong className="stat-value">{counters[index]}</strong>
           </article>
         ))}
       </div>
 
       <form className="filter-bar" onSubmit={(event) => { event.preventDefault(); void reload() }}>
-        {filterFields.map((field) => (
-          <label key={field} className="filter-item">
-            <span>{field}</span>
-            <input
-              value={filters[field] ?? ''}
-              placeholder={`按${field}检索`}
-              onChange={(event) => setFilters((prev) => ({ ...prev, [field]: event.target.value }))}
-            />
-          </label>
-        ))}
+        <label className="filter-item">
+          <span>实例编号</span>
+          <input
+            value={filters["实例编号"] ?? ''}
+            placeholder="按实例编号检索"
+            onChange={(event) => setFilters((prev) => ({ ...prev, 实例编号: event.target.value }))}
+          />
+        </label>
+        <label className="filter-item">
+          <span>实例状态</span>
+          <select
+            value={filters["实例状态"] ?? ''}
+            onChange={(event) => setFilters((prev) => ({ ...prev, 实例状态: event.target.value }))}
+          >
+            <option value="">全部</option>
+            {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
+          </select>
+        </label>
         <button className="btn" type="submit">查询</button>
         <button className="btn ghost" type="button" onClick={() => setFilters({})}>重置条件</button>
       </form>

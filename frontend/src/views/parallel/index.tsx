@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import { request } from '@/api/client'
 
@@ -41,18 +41,23 @@ const stats = [
 
 type Row = Record<string, string | number | null>
 
+const emptyForm = { 记录编号: '', 流算子名: '', 当前并行度: '', 建议并行度: '', 吞吐提升: '', 资源成本: '' }
+
 export default function ParallelView() {
   const [rows, setRows] = useState<Row[]>([])
   const [total, setTotal] = useState(0)
   const [errorMessage, setErrorMessage] = useState('')
+  const [notice, setNotice] = useState('')
   const [filters, setFilters] = useState<Record<string, string>>({})
-  const filterFields = useMemo(() => columns.slice(0, 3), [])
+  const [form, setForm] = useState<Record<string, string>>(emptyForm)
 
   const reload = useCallback(async () => {
     setErrorMessage('')
-    const query = new URLSearchParams(filters).toString()
+    const query = new URLSearchParams()
+    if (filters["记录编号"]) query.set('keyword', filters["记录编号"])
+    if (filters["记录状态"]) query.set('status', filters["记录状态"])
     try {
-      const response = await request(`${ENDPOINT}?${query}`)
+      const response = await request(`${ENDPOINT}?${query.toString()}`)
       if (!response.ok) {
         throw new Error('调优记录列表读取失败')
       }
@@ -68,16 +73,39 @@ export default function ParallelView() {
     void reload()
   }, [reload])
 
+  async function createEntry() {
+    setErrorMessage('')
+    setNotice('')
+    try {
+      const response = await request(ENDPOINT, {
+        method: 'POST',
+        body: JSON.stringify({ values: { ...form } }),
+      })
+      const payload = await response.json()
+      if (!response.ok || payload.ok === false) {
+        throw new Error(payload.detail ?? payload.message ?? '调优记录登记失败')
+      }
+      setNotice(payload.message)
+      setForm(emptyForm)
+      await reload()
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : '调优记录登记失败')
+    }
+  }
+
   async function runAction(action: string, row: Row) {
     setErrorMessage('')
+    setNotice('')
     try {
       const response = await request(`${ENDPOINT}/${row.id}/actions`, {
         method: 'POST',
         body: JSON.stringify({ action }),
       })
-      if (!response.ok) {
-        throw new Error('并行度调优动作未生效，请稍后重试')
+      const payload = await response.json()
+      if (!response.ok || payload.ok === false) {
+        throw new Error(payload.detail ?? payload.message ?? '并行度调优动作未生效，请稍后重试')
       }
+      setNotice(payload.message)
       await reload()
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : '并行度调优操作失败')
@@ -92,8 +120,8 @@ export default function ParallelView() {
           <p className="page-desc">维护并行度调优的当前配置、优化建议与收益评估，为并行度调优提供可审计的数据工程流程。</p>
         </div>
         <div className="page-actions">
-          <button className="btn primary" type="button" onClick={() => setErrorMessage('调优记录登记入口尚未接入审批流')}>
-            登记调优记录
+          <button className="btn" type="button" onClick={() => window.open('/parallel-suggest', '_blank')}>
+            并行度建议与审批
           </button>
           <button className="btn" type="button" onClick={() => window.open(`${ENDPOINT}/export`, '_blank')}>
             导出并行度调优清单
@@ -110,17 +138,42 @@ export default function ParallelView() {
         ))}
       </div>
 
-      <form className="filter-bar" onSubmit={(event) => { event.preventDefault(); void reload() }}>
-        {filterFields.map((field) => (
+      <form
+        className="filter-bar"
+        onSubmit={(event) => { event.preventDefault(); void createEntry() }}
+      >
+        {Object.keys(emptyForm).map((field) => (
           <label key={field} className="filter-item">
             <span>{field}</span>
             <input
-              value={filters[field] ?? ''}
-              placeholder={`按${field}检索`}
-              onChange={(event) => setFilters((prev) => ({ ...prev, [field]: event.target.value }))}
+              value={form[field] ?? ''}
+              placeholder={`填写${field}`}
+              onChange={(event) => setForm((prev) => ({ ...prev, [field]: event.target.value }))}
             />
           </label>
         ))}
+        <button className="btn primary" type="submit">登记调优记录</button>
+      </form>
+
+      <form className="filter-bar" onSubmit={(event) => { event.preventDefault(); void reload() }}>
+        <label className="filter-item">
+          <span>记录编号</span>
+          <input
+            value={filters["记录编号"] ?? ''}
+            placeholder="按记录编号检索"
+            onChange={(event) => setFilters((prev) => ({ ...prev, 记录编号: event.target.value }))}
+          />
+        </label>
+        <label className="filter-item">
+          <span>记录状态</span>
+          <select
+            value={filters["记录状态"] ?? ''}
+            onChange={(event) => setFilters((prev) => ({ ...prev, 记录状态: event.target.value }))}
+          >
+            <option value="">全部</option>
+            {statuses.map((status) => <option key={status} value={status}>{status}</option>)}
+          </select>
+        </label>
         <button className="btn" type="submit">查询</button>
         <button className="btn ghost" type="button" onClick={() => setFilters({})}>重置条件</button>
       </form>
@@ -155,6 +208,7 @@ export default function ParallelView() {
 
       <footer className="page-foot">
         <span>共 {total} 条并行度调优记录</span>
+        {notice && <span>{notice}</span>}
         {errorMessage && <span className="error-text">{errorMessage}</span>}
       </footer>
     </section>

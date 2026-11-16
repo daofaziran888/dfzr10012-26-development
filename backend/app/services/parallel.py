@@ -7,6 +7,7 @@ from app.store import store
 
 MODULE = "parallel"
 REQUIRED_FIELDS = ["记录编号", "流算子名", "当前并行度"]
+OPTIONAL_FIELDS = ["建议并行度", "吞吐提升", "资源成本", "调优时间"]
 STATUS_ORDER = ["待调优", "已调优", "已回滚", "已归档"]
 ACTION_RULES = {"执行调优": "待调优", "回滚调优": "已调优", "归档记录": "已回滚"}
 NEGATIVE_ACTIONS = ["回滚调优"]
@@ -40,6 +41,10 @@ class ParallelService:
         rows = store.rows(MODULE)
         entry = {"id": max((int(row.get("id", 0)) for row in rows), default=0) + 1}
         entry.update({field: values.get(field) for field in REQUIRED_FIELDS})
+        # 调优字段要一并保存，否则后续反压建议链路只能看到三个必填字段。
+        for field in OPTIONAL_FIELDS:
+            if field in values:
+                entry[field] = values.get(field)
         entry["status"] = STATUS_ORDER[0]
         entry["pending"] = True
         entry["abnormal"] = False

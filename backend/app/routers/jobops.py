@@ -7,12 +7,14 @@ from fastapi import APIRouter, HTTPException, Query
 
 from app.schemas import ActionResult, EntryPayload, PageResult
 from app.services.jobops import JobopsService
+from app.services.parallel_suggest import ParallelSuggestService
 
 router = APIRouter(prefix="/api/jobops", tags=["流作业运维"])
 
 service = JobopsService()
+suggest_service = ParallelSuggestService()
 
-LIST_FIELDS = ["实例编号", "作业名称", "运行节点", "启动时间", "运行时长", "异常次数", "重启次数", "实例状态"]
+LIST_FIELDS = ["实例编号", "作业名称", "运行节点", "启动时间", "运行时长", "异常次数", "重启次数", "实例状态", "并行度容量", "节点容量", "并行度建议编号", "建议数据版本"]
 STATUSES = ["待启动", "运行中", "已暂停", "已停止"]
 
 
@@ -28,6 +30,15 @@ def list_entries(
         raise HTTPException(status_code=400, detail="每页最多 200 条，请缩小分页范围")
     items, total = service.list_entries(keyword=keyword, status=status, page=page, size=size)
     return PageResult(items=items, total=total, page=page, size=size)
+
+
+@router.get("/capacity/{job_id}", response_model=dict)
+def get_capacity(job_id: int) -> dict:
+    """与并行度建议模块读同一份数据：作业实例容量 + 它引用的建议记录版本。"""
+    capacity = suggest_service.resolve_capacity(job_id)
+    if capacity is None:
+        raise HTTPException(status_code=404, detail=f"作业实例 {job_id} 不存在")
+    return capacity
 
 
 @router.get("/{entry_id}", response_model=dict)

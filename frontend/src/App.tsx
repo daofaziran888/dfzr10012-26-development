@@ -14,12 +14,13 @@ import SinkView from './views/sink'
 import SchemaView from './views/schema'
 import WatermarkView from './views/watermark'
 import ParallelView from './views/parallel'
+import ParallelSuggestView from './views/parallel_suggest'
 import MetricView from './views/metric'
 import AlarmView from './views/alarm'
 import UdfView from './views/udf'
 import LogView from './views/log'
 
-const navItems = [{ label: "运营概览", path: "/" }, { label: "流数据源接入", path: "/streamin" }, { label: "流处理算子", path: "/operator" }, { label: "窗口计算配置", path: "/window" }, { label: "状态后端管理", path: "/state" }, { label: "检查点恢复", path: "/checkpoint" }, { label: "反压监控面板", path: "/backpress" }, { label: "延迟追踪管理", path: "/latency" }, { label: "流作业运维", path: "/jobops" }, { label: "流数据输出端", path: "/sink" }, { label: "流数据格式定义", path: "/schema" }, { label: "水位线管理", path: "/watermark" }, { label: "并行度调优", path: "/parallel" }, { label: "流作业指标采集", path: "/metric" }, { label: "流告警规则", path: "/alarm" }, { label: "自定义函数库", path: "/udf" }, { label: "流处理日志中心", path: "/log" }]
+const navItems = [{ label: "运营概览", path: "/" }, { label: "流数据源接入", path: "/streamin" }, { label: "流处理算子", path: "/operator" }, { label: "窗口计算配置", path: "/window" }, { label: "状态后端管理", path: "/state" }, { label: "检查点恢复", path: "/checkpoint" }, { label: "反压监控面板", path: "/backpress" }, { label: "延迟追踪管理", path: "/latency" }, { label: "流作业运维", path: "/jobops" }, { label: "流数据输出端", path: "/sink" }, { label: "流数据格式定义", path: "/schema" }, { label: "水位线管理", path: "/watermark" }, { label: "并行度调优", path: "/parallel" }, { label: "并行度建议与审批", path: "/parallel-suggest" }, { label: "流作业指标采集", path: "/metric" }, { label: "流告警规则", path: "/alarm" }, { label: "自定义函数库", path: "/udf" }, { label: "流处理日志中心", path: "/log" }]
 
 export default function App() {
   const [operator] = useState('值班管理员')
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/schema" element={<SchemaView />} />
           <Route path="/watermark" element={<WatermarkView />} />
           <Route path="/parallel" element={<ParallelView />} />
+          <Route path="/parallel-suggest" element={<ParallelSuggestView />} />
           <Route path="/metric" element={<MetricView />} />
           <Route path="/alarm" element={<AlarmView />} />
           <Route path="/udf" element={<UdfView />} />
